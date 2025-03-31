@@ -21,7 +21,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:db:push": "prisma db push",
     "prisma:db:reset": "prisma migrate reset",
-    "prisma:db:deploy": "prisma migrate deploy"
+    "prisma:db:deploy": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",
