@@ -1,0 +1,1 @@
+export const PRISMA_DATABASE = 'PRISMA_DATABASE';
