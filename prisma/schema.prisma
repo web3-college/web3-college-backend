@@ -1,12 +1,9 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output = "./client/postgresql"
+  output   = "./client/postgresql"
 }
 
 datasource db {
@@ -15,8 +12,98 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// 用户表
 model User {
-  id    Int     @id @default(autoincrement())
-  address String  @unique
-  name  String?
+  id              Int               @id @default(autoincrement())
+  address         String            @unique // 用户的钱包地址
+  name            String?           // 用户名称
+  email           String?           @unique // 用户邮箱
+  avatar          String?           // 用户头像
+  bio             String?           // 用户简介
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  purchasedCourses PurchasedCourse[] // 用户购买的课程
+}
+
+// 课程表
+model Course {
+  id              Int               @id @default(autoincrement()) // 对应合约中的web2CourseId
+  name            String            // 课程名称
+  description     String?           // 课程描述
+  coverImage      String?           // 课程封面图
+  price           Float             // 课程价格（YD代币）
+  creator         String            // 课程创建者地址
+  isActive        Boolean           @default(true) // 课程是否可购买
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  onChainId       Int?              // 链上课程ID
+  categoryId      Int?              // 课程分类ID
+  category        Category?         @relation(fields: [categoryId], references: [id])
+  purchasedCourses PurchasedCourse[] // 购买记录
+  sections        CourseSection[]   // 课程章节
+}
+
+// 课程章节
+model CourseSection {
+  id              Int               @id @default(autoincrement())
+  courseId        Int
+  course          Course            @relation(fields: [courseId], references: [id])
+  title           String            // 章节标题
+  description     String?           // 章节描述
+  order           Int               // 章节顺序
+  videoUrl        String          // 视频URL
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  progress        CourseProgress[]  // 学习进度
+}
+
+// 用户购买课程记录
+model PurchasedCourse {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  courseId    Int
+  course      Course   @relation(fields: [courseId], references: [id])
+  purchasedAt DateTime @default(now())
+  txHash      String?  // 交易哈希
+  onChainStatus Boolean @default(false) // 链上状态验证
+  progress    CourseProgress[] // 学习进度
+  
+  @@unique([userId, courseId]) // 用户不能重复购买同一课程
+}
+
+// 课程学习进度
+model CourseProgress {
+  id            Int           @id @default(autoincrement())
+  purchasedCourseId Int
+  purchasedCourse PurchasedCourse @relation(fields: [purchasedCourseId], references: [id])
+  sectionId     Int
+  section       CourseSection @relation(fields: [sectionId], references: [id])
+  status        ProgressStatus @default(STARTED)
+  progress      Float         @default(0) // 0-100进度百分比
+  lastPosition  Int?          // 上次观看的位置（秒）
+  updatedAt     DateTime      @updatedAt
+  syncedToChain Boolean       @default(false) // 是否已同步到链上
+
+  @@unique([purchasedCourseId, sectionId]) // 一个用户的某个课程的某个章节只有一条进度记录
+}
+
+// 进度状态枚举
+enum ProgressStatus {
+  NOT_STARTED
+  STARTED
+  COMPLETED
+}
+
+// 课程分类表
+model Category {
+  id              Int               @id @default(autoincrement())
+  name            String            // 分类名称
+  description     String?           // 分类描述
+  icon            String?           // 分类图标
+  order           Int               @default(0) // 排序顺序
+  isActive        Boolean           @default(true) // 是否激活
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  courses         Course[]          // 关联的课程
 }
