@@ -4,9 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { ValidationPipe, VERSION_NEUTRAL, VersioningType } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
   const port = configService.get('PORT', 3001);
@@ -23,6 +25,7 @@ async function bootstrap() {
   if (errorFilter) {
     app.useGlobalFilters(new AllExceptionFilter(app.get(HttpAdapterHost)));
   }
+  app.useGlobalInterceptors(new ResponseInterceptor());
   if (cors) {
     app.enableCors();
   }

@@ -33,7 +33,7 @@ export class PrismaCoreModule implements OnApplicationShutdown {
     let newOptions = {
         datasourceUrl: url
     }
-    if(!Object.keys(options).length) {
+    if(Object.keys(options).length) {
         newOptions = {
             ...newOptions,
             ...options
@@ -97,7 +97,7 @@ export class PrismaCoreModule implements OnApplicationShutdown {
             let newOptions = {
                 datasourceUrl: url
             }
-            if(!Object.keys(options).length) {
+            if(Object.keys(options).length) {
                 newOptions = {
                     ...newOptions,
                     ...options

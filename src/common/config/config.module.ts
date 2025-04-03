@@ -5,7 +5,7 @@ const envFilePath = [`.env.${process.env.NODE_ENV || 'development'}`, '.env'];
 
 const schema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production').default('development'),
-  PORT: Joi.number().default(3000),
+  PORT: Joi.number().default(3001),
   DATABASE_URL: Joi.string().uri(),
   DIRECT_URL: Joi.string().uri(),
 });
