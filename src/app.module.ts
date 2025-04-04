@@ -5,7 +5,9 @@ import { LogsModule } from './common/logger/logs.module';
 import { DatabaseModule } from './database/database.module';
 import { CourseModule } from './course/course.module';
 import { CategoryModule } from './category/category.module';
-import { UploadModule } from './upload/upload.module'; 
+import { UploadModule } from './upload/upload.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,7 +17,9 @@ import { UploadModule } from './upload/upload.module';
     CourseModule,
     CategoryModule,
     UploadModule,
+    UsersModule,
+    AuthModule,
   ],
-  controllers: [AppController]
+  controllers: [AppController],
 })
-export class AppModule {} 
+export class AppModule {}
