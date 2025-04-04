@@ -4,13 +4,13 @@ import { PrismaConfigService } from './prisma-config.service';
 import { PRISMA_DATABASE } from '../database.constants';
 
 @Module({
-    imports: [
-        PrismaModule.forRootAsync({
-            name: PRISMA_DATABASE,
-            useClass: PrismaConfigService,
-        }),
-    ],
-    providers: [],
-    exports: [],
+  imports: [
+    PrismaModule.forRootAsync({
+      name: PRISMA_DATABASE,
+      useClass: PrismaConfigService,
+    }),
+  ],
+  providers: [],
+  exports: [PrismaModule],
 })
 export class PrismaCommonModule {}
