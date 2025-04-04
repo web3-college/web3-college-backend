@@ -31,3 +31,4 @@ pnpm run prisma:generate
 ```bash
 pnpm run start:dev
 ```
+项目启动后会生产openapi-spec.json文件，这是帮助前端生产请求api的文件

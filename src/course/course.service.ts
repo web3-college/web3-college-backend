@@ -1,8 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
-import { UpdateCourseSectionDto } from './dto/update-course-section.dto';
 import { PRISMA_DATABASE } from '@/database/database.constants';
 import { PrismaClient } from 'prisma/client/postgresql'
 
@@ -32,7 +31,10 @@ export class CourseService {
         
         // 批量创建章节
         await tx.courseSection.createMany({
-          data: sectionsWithCourseId,
+          data: sectionsWithCourseId.map(section => ({
+            ...section,
+            videoUrl: section.videoUrl || '', // 确保 videoUrl 有值
+          })),
         });
       }
       
@@ -99,7 +101,7 @@ export class CourseService {
 
   // 获取单个课程
   async findCourseById(id: number) {
-    return this.prisma.course.findUnique({
+    const course = await this.prisma.course.findUnique({
       where: { id },
       include: {
         sections: {
@@ -115,56 +117,160 @@ export class CourseService {
         }
       },
     });
+    
+    if (!course) {
+      throw new NotFoundException(`课程ID ${id} 不存在`);
+    }
+    
+    return course;
   }
 
   // 更新课程
   async updateCourse(id: number, data: UpdateCourseDto) {
-    return this.prisma.course.update({
+    const { sections, ...courseData } = data;
+    
+    // 确保课程存在
+    const existingCourse = await this.prisma.course.findUnique({
       where: { id },
-      data,
-      include: {
-        sections: true,
-        category: true,
-      },
+      include: { sections: true }
+    });
+    
+    if (!existingCourse) {
+      throw new NotFoundException(`课程ID ${id} 不存在`);
+    }
+    
+    // 使用事务来确保课程和章节一起更新
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 更新课程
+      const updatedCourse = await tx.course.update({
+        where: { id },
+        data: courseData,
+      });
+      
+      // 2. 如果提供了章节数据，更新章节
+      if (sections && sections.length > 0) {
+        // 获取现有章节ID
+        const existingSectionIds = existingCourse.sections.map(section => section.id);
+        
+        // 获取要更新的章节ID和要创建的新章节
+        const updateSections = sections.filter(section => section.id);
+        const newSections = sections.filter(section => !section.id);
+        
+        // 要删除的章节ID（现有章节中不在更新列表中的）
+        const updateSectionIds = updateSections.map(section => section.id);
+        const deleteSectionIds = existingSectionIds.filter(id => !updateSectionIds.includes(id));
+        
+        // 删除不再需要的章节
+        if (deleteSectionIds.length > 0) {
+          await tx.courseSection.deleteMany({
+            where: {
+              id: {
+                in: deleteSectionIds
+              }
+            }
+          });
+        }
+        
+        // 更新现有章节
+        for (const section of updateSections) {
+          await tx.courseSection.update({
+            where: { id: section.id },
+            data: section,
+          });
+        }
+        
+        // 创建新章节
+        if (newSections.length > 0) {
+          // 找出当前最大顺序号
+          const maxOrder = existingCourse.sections.length > 0
+            ? Math.max(...existingCourse.sections.map(s => s.order))
+            : 0;
+          
+          // 为新章节添加课程ID和顺序
+          const newSectionsWithCourseId = newSections.map((section, index) => ({
+            ...section,
+            courseId: id,
+            order: section.order || maxOrder + index + 1,
+          }));
+          await tx.courseSection.createMany({
+            data: newSectionsWithCourseId.map(section => ({
+              ...section,
+              title: section.title || '',
+              description: section.description || '',
+              videoUrl: section.videoUrl || ''
+            })),
+          });
+        }
+      }
+      // 3. 返回更新后的课程
+      return tx.course.findUnique({
+        where: { id },
+        include: {
+          sections: {
+            orderBy: {
+              order: 'asc',
+            },
+          },
+          category: true,
+        },
+      });
     });
   }
 
   // 删除课程
   async deleteCourse(id: number) {
-    return this.prisma.course.delete({
-      where: { id },
+    // 使用事务确保删除课程的同时删除相关章节
+    return this.prisma.$transaction(async (tx) => {
+      // 1. 删除课程相关的章节
+      await tx.courseSection.deleteMany({
+        where: { courseId: id },
+      });
+      
+      // 2. 删除课程
+      return tx.course.delete({
+        where: { id },
+      });
+    });
+  }
+
+  // 创建课程章节
+  async createCourseSection(courseId: number, data: CreateCourseSectionDto) {
+    // 确保课程存在
+    await this.findCourseById(courseId);
+    
+    // 获取当前最高的章节顺序
+    const sections = await this.prisma.courseSection.findMany({
+      where: { courseId },
+      orderBy: { order: 'desc' },
+      take: 1,
+    });
+    
+    const order = sections.length > 0 ? sections[0].order + 1 : 1;
+    
+    // 创建章节
+    return this.prisma.courseSection.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        videoUrl: data.videoUrl,
+        course: {
+          connect: { id: courseId }
+        },
+        order: data.order || order,
+      },
     });
   }
 
   // 获取课程的所有章节
   async findAllCourseSections(courseId: number) {
+    // 确保课程存在
+    await this.findCourseById(courseId);
+    
     return this.prisma.courseSection.findMany({
       where: { courseId },
       orderBy: {
         order: 'asc',
       },
-    });
-  }
-
-  // 获取单个章节
-  async findCourseSectionById(id: number) {
-    return this.prisma.courseSection.findUnique({
-      where: { id },
-    });
-  }
-
-  // 更新章节
-  async updateCourseSection(id: number, data: UpdateCourseSectionDto) {
-    return this.prisma.courseSection.update({
-      where: { id },
-      data,
-    });
-  }
-
-  // 删除章节
-  async deleteCourseSection(id: number) {
-    return this.prisma.courseSection.delete({
-      where: { id },
     });
   }
 
