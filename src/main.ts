@@ -6,6 +6,8 @@ import { AllExceptionFilter } from './common/filters/all-exception.filter';
 import { ValidationPipe, VERSION_NEUTRAL, VersioningType } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -41,6 +43,19 @@ async function bootstrap() {
       enableImplicitConversion: true,
     }
   }));
+  
+  // 配置Swagger文档
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Web3 College API')
+    .addTag('course', '课程相关API')
+    .addTag('category', '分类相关API')
+    .addTag('upload', '上传相关API')
+    .build();
+  
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api-docs', app, document);
+  fs.writeFileSync('./openapi-spec.json', JSON.stringify(document));
+
   await app.listen(port);
 }
 bootstrap();
