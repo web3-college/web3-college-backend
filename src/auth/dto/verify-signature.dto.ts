@@ -8,4 +8,4 @@ export class VerifySignatureDto {
   @IsNotEmpty()
   @IsString()
   signature: string;
-} 
+}

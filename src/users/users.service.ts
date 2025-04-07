@@ -11,8 +11,11 @@ export class UsersService {
   create(createUserDto: CreateUserDto) {
     return this.prismaClient.user.create({
       data: {
-        username: createUserDto.username,
-        walletAddress: createUserDto.walletAddress,
+        name: createUserDto.name,
+        address: createUserDto.address,
+        email: createUserDto.email,
+        avatar: createUserDto.avatar,
+        bio: createUserDto.bio,
       },
     });
   }
@@ -46,9 +49,9 @@ export class UsersService {
     });
   }
 
-  async findByWalletAddress(walletAddress: string) {
+  async findByAddress(address: string) {
     return this.prismaClient.user.findUnique({
-      where: { walletAddress },
+      where: { address },
     });
   }
 }

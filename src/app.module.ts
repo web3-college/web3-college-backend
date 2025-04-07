@@ -8,7 +8,7 @@ import { CategoryModule } from './category/category.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-
+import { SessionModule } from './session/session.module';
 @Module({
   imports: [
     ConfigModule,
@@ -19,6 +19,7 @@ import { AuthModule } from './auth/auth.module';
     UploadModule,
     UsersModule,
     AuthModule,
+    SessionModule,
   ],
   controllers: [AppController],
 })

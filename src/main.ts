@@ -38,7 +38,10 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
   // 跨域
   if (cors) {
-    app.enableCors();
+    app.enableCors({
+      origin: true,
+      credentials: true,
+    });
   }
   // 前缀
   app.setGlobalPrefix(prefix);
@@ -58,7 +61,7 @@ async function bootstrap() {
       },
     }),
   );
-  
+
   // 配置Swagger文档
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Web3 College API')
@@ -66,7 +69,7 @@ async function bootstrap() {
     .addTag('category', '分类相关API')
     .addTag('upload', '上传相关API')
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api-docs', app, document);
   fs.writeFileSync('./openapi-spec.json', JSON.stringify(document));
