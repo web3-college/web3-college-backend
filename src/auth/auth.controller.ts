@@ -94,7 +94,7 @@ export class AuthController {
       // 检查会话中是否有 SIWE 数据
       if (request.session?.siwe) {
         const siweData = request.session.siwe;
-        
+
         // 检查 SIWE 数据是否过期
         if (
           siweData.expirationTime &&
@@ -157,6 +157,39 @@ export class AuthController {
       return {
         authenticated: false,
         message: error.message || '未登录',
+      };
+    }
+  }
+
+  @Get('logout')
+  async logout(@Req() request: Request) {
+    try {
+      // 清除会话中的 SIWE 数据和 nonce
+      request.session.siwe = null;
+      request.session.nonce = null;
+
+      // 销毁整个会话
+      return new Promise((resolve) => {
+        request.session.destroy((err) => {
+          if (err) {
+            console.error('销毁会话时出错:', err);
+            resolve({
+              success: false,
+              message: '登出失败',
+            });
+          } else {
+            resolve({
+              success: true,
+              message: '已成功登出',
+            });
+          }
+        });
+      });
+    } catch (error) {
+      console.error('登出过程中出错:', error);
+      return {
+        success: false,
+        message: '登出过程中发生错误',
       };
     }
   }
