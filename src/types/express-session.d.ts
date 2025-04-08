@@ -6,4 +6,4 @@ declare module 'express-session' {
     nonce?: string;
     siwe?: SiweMessage;
   }
-  }
+}

@@ -2,11 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PRISMA_DATABASE } from '@/database/database.constants';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../prisma/client/postgresql';
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(PRISMA_DATABASE) private prismaClient: PrismaClient) {}
+  constructor(@Inject(PRISMA_DATABASE) private prismaClient: PrismaClient) { }
 
   create(createUserDto: CreateUserDto) {
     return this.prismaClient.user.create({

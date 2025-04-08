@@ -5,21 +5,32 @@ import {
   Get,
   Req,
   UnauthorizedException,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request } from 'express';
 import { VerifySignatureDto } from './dto/verify-signature.dto';
-import { UsersService } from '@/users/users.service';
-import { JwtService } from '@nestjs/jwt';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiOkResponse,
+  ApiUnauthorizedResponse,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { apiSimpleResponse, apiInlineResponse } from '../common/models/swagger.model';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private usersService: UsersService,
-    private jwtService: JwtService,
-  ) {}
+  ) { }
 
+  @ApiOperation({ summary: '获取随机Nonce', description: '用于SIWE签名过程，返回一个随机字符串' })
+  @ApiOkResponse(apiInlineResponse({
+    nonce: { type: 'string', example: 'a1b2c3d4e5f6' }
+  }, '成功获取Nonce'))
   @Get('nonce')
   async getNonce(@Req() request: Request) {
     const nonce = this.authService.getNonce();
@@ -28,6 +39,16 @@ export class AuthController {
     return { nonce };
   }
 
+  @ApiOperation({
+    summary: '验证SIWE签名',
+    description: '验证以太坊钱包签名'
+  })
+  @ApiBody({ type: VerifySignatureDto })
+  @ApiOkResponse(apiSimpleResponse(true, '认证成功'))
+  @ApiResponse(apiInlineResponse({
+    status: { type: 'number', example: 422 },
+    message: { type: 'string', example: 'Invalid signature' }
+  }, '签名验证失败', 422))
   @Post('verify')
   async verifySignature(
     @Body() verifySignatureDto: VerifySignatureDto,
@@ -39,7 +60,7 @@ export class AuthController {
       }
       const nonce = request.session.nonce;
       console.log('verify', nonce);
-      const { fields, access_token, user } =
+      const { fields } =
         await this.authService.verifySignature(
           verifySignatureDto.message,
           verifySignatureDto.signature,
@@ -55,11 +76,7 @@ export class AuthController {
       // 保存会话并返回认证结果
       return new Promise((resolve) => {
         request.session.save(() => {
-          resolve({
-            authenticated: true,
-            access_token: access_token,
-            user: user,
-          });
+          resolve(true);
         });
       });
     } catch (error) {
@@ -88,6 +105,18 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: '获取当前登录用户信息',
+    description: '从会话中获取用户信息'
+  })
+  @ApiOkResponse(apiInlineResponse({
+    address: { type: 'string', example: '0x1234567890abcdef1234567890abcdef12345678' },
+    chainId: { type: 'number', example: 1 }
+  }, '用户已登录'))
+  @ApiUnauthorizedResponse(apiInlineResponse({
+    authenticated: { type: 'boolean', example: false },
+    message: { type: 'string', example: '未登录' }
+  }, '用户未登录', HttpStatus.UNAUTHORIZED))
   @Get('session')
   async getUserInfo(@Req() request: Request) {
     try {
@@ -108,50 +137,11 @@ export class AuthController {
           throw new UnauthorizedException('登录已过期，请重新登录');
         }
 
-        // 获取用户信息
-        const user = await this.usersService.findByAddress(siweData.address);
-
-        if (!user) {
-          throw new UnauthorizedException('用户不存在');
-        }
-
-        // 生成新的 JWT 令牌
-        const payload = {
-          sub: user.id,
-          address: user.address,
-        };
-
         return {
-          authenticated: true,
-          user: user,
-          access_token: this.jwtService.sign(payload),
+          address: siweData.address,
+          chainId: siweData.chainId,
         };
       }
-
-      // 如果没有 SIWE 数据，尝试从 Authorization 头部获取 JWT
-      // const authHeader = request.headers.authorization;
-      // if (authHeader && authHeader.startsWith('Bearer ')) {
-      //   const token = authHeader.substring(7);
-
-      //   try {
-      //     const payload = this.jwtService.verify(token);
-      //     const user = await this.usersService.findById(payload.sub);
-
-      //     if (!user) {
-      //       throw new UnauthorizedException('用户不存在');
-      //     }
-
-      //     return {
-      //       authenticated: true,
-      //       user: user,
-      //       access_token: token, // 返回原始令牌
-      //     };
-      //   } catch (error) {
-      //     throw new UnauthorizedException('令牌无效或已过期');
-      //   }
-      // }
-
-      // 如果既没有会话数据也没有有效的 JWT，则返回未认证状态
       throw new UnauthorizedException('未登录');
     } catch (error) {
       return {
@@ -161,6 +151,14 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: '用户登出',
+    description: '清除用户会话和认证信息'
+  })
+  @ApiOkResponse(apiInlineResponse({
+    success: { type: 'boolean', example: true },
+    message: { type: 'string', example: '已成功登出' }
+  }, '登出成功'))
   @Get('logout')
   async logout(@Req() request: Request) {
     try {

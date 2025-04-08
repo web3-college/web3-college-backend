@@ -10,8 +10,7 @@ import {
 } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as fs from 'fs';
+import { setupSwagger } from './common/utils/swagger.util';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -63,16 +62,20 @@ async function bootstrap() {
   );
 
   // 配置Swagger文档
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Web3 College API')
-    .addTag('course', '课程相关API')
-    .addTag('category', '分类相关API')
-    .addTag('upload', '上传相关API')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api-docs', app, document);
-  fs.writeFileSync('./openapi-spec.json', JSON.stringify(document));
+  setupSwagger(app, {
+    title: 'Web3 College API',
+    description: 'Web3学院后端API文档',
+    version: '1.0',
+    tags: [
+      { name: 'auth', description: '认证相关API' },
+      { name: 'course', description: '课程相关API' },
+      { name: 'category', description: '分类相关API' },
+      { name: 'upload', description: '上传相关API' },
+    ],
+    docPath: 'api-docs',
+    saveToFile: true,
+    outputFilePath: './openapi-spec.json'
+  });
 
   await app.listen(port);
 }

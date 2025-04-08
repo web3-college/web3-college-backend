@@ -6,7 +6,7 @@ import session from 'express-session';
   imports: [ConfigModule],
 })
 export class SessionModule implements NestModule {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) { }
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(
