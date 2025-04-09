@@ -20,6 +20,7 @@ export class AuthService {
     nonce: string,
   ): Promise<{
     fields: SiweResponse;
+    id: number;
   }> {
     try {
       const siweMessage = new SiweMessage(message);
@@ -44,6 +45,7 @@ export class AuthService {
 
       return {
         fields,
+        id: user.id,
       };
     } catch (error) {
       throw new UnauthorizedException('Authentication failed');

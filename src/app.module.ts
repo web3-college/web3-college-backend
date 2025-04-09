@@ -9,6 +9,8 @@ import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { SessionModule } from './session/session.module';
+import { PermissionModule } from './permission/permission.module';
+import { RoleModule } from './role/role.module';
 @Module({
   imports: [
     ConfigModule,
@@ -20,7 +22,9 @@ import { SessionModule } from './session/session.module';
     UsersModule,
     AuthModule,
     SessionModule,
+    PermissionModule,
+    RoleModule,
   ],
   controllers: [AppController],
 })
-export class AppModule {}
+export class AppModule { }
