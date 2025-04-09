@@ -9,11 +9,11 @@ const tenantDBType = parsedConfig['TENANT_DB_TYPE'].split(',') || [];
 
 const imports = tenantMode
   ? tenantDBType.map((type) => {
-      switch (type) {
-        case 'prisma':
-          return PrismaCommonModule;
-      }
-    })
+    switch (type) {
+      case 'prisma':
+        return PrismaCommonModule;
+    }
+  })
   : [PrismaCommonModule];
 
 @Module({
@@ -21,4 +21,4 @@ const imports = tenantMode
   providers: [],
   exports: [],
 })
-export class DatabaseModule {}
+export class DatabaseModule { }

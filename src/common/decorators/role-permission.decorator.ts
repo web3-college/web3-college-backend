@@ -7,11 +7,11 @@ export const PERMISSION_KEY = 'permission';
 const accumulateMetadata = (key: string, permission: string) => {
   return (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => {
     const reflector = new Reflector();
-    if(descriptor && descriptor.value){
+    if (descriptor && descriptor.value) {
       const existingPermissions = reflector.get<string[]>(key, descriptor.value) || [];
       const newPermissions = [...existingPermissions, permission];
       SetMetadata(key, newPermissions)(target, propertyKey, descriptor);
-    }else{
+    } else {
       const existingPermissions = reflector.get<string[]>(key, target) || [];
       const newPermissions = [...existingPermissions, permission];
       SetMetadata(key, newPermissions)(target);

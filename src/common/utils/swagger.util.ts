@@ -2,6 +2,9 @@ import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import { BaseResponseDto } from '../models/swagger.model';
+import { VerifySignatureDto } from '@/auth/dto/verify-signature.dto';
+import { SessionResponseDto, AuthErrorResponseDto } from '@/auth/dto/auth-response.dto';
+import { QueryUserDto, CreateUserDto, UpdateUserDto, UserListResponseDto, UserResponseDto } from '@/users/dto/index';
 
 /**
  * Swagger文档配置接口
@@ -24,47 +27,22 @@ export function collectModels(): any[] {
   // 基础响应模型总是需要包含
   const models: any[] = [BaseResponseDto];
 
-  // 自动收集所有DTO
+  // 手动导入DTO类，避免动态导入的路径问题
   try {
-    // 需要收集DTO的目录列表
-    const directories = [
-      'src/auth/dto',
-      // 未来可以添加更多目录
-      // 'src/users/dto',
-      // 'src/courses/dto',
-    ];
 
-    directories.forEach(dir => {
-      if (fs.existsSync(dir)) {
-        // 获取目录下所有文件
-        const files = fs.readdirSync(dir);
+    // 添加到模型列表
+    models.push(VerifySignatureDto);
+    models.push(SessionResponseDto);
+    models.push(AuthErrorResponseDto);
+    models.push(CreateUserDto);
+    models.push(UpdateUserDto);
+    models.push(UserListResponseDto);
+    models.push(UserResponseDto);
+    models.push(QueryUserDto);
 
-        files.forEach(file => {
-          // 只处理.ts文件且排除测试文件
-          if (file.endsWith('.dto.ts') && !file.includes('.spec.') && !file.includes('.test.')) {
-            try {
-              // 动态导入模块
-              const moduleRelativePath = `${dir}/${file}`.replace('src/', '../').replace('.ts', '');
-              // 使用相对路径从src目录开始
-              const module = require(moduleRelativePath);
-
-              // 收集模块中所有导出的类
-              Object.keys(module).forEach(key => {
-                if (typeof module[key] === 'function' &&
-                  /^[A-Z]/.test(key) && // 类名通常以大写字母开头
-                  (key.endsWith('Dto') || key.endsWith('Entity') || key.endsWith('Model'))) {
-                  models.push(module[key]);
-                }
-              });
-            } catch (err) {
-              console.warn(`无法导入DTO: ${dir}/${file}`, err);
-            }
-          }
-        });
-      }
-    });
+    // 未来可以添加更多DTO
   } catch (err) {
-    console.error('收集Swagger模型时出错:', err);
+    console.error('手动导入DTO时出错:', err);
   }
 
   return models;
@@ -95,22 +73,30 @@ export function setupSwagger(
 
   const config = builder.build();
 
-  // 收集所有需要在Swagger中注册的模型
-  const models = collectModels();
+  try {
+    // 收集所有需要在Swagger中注册的模型
+    const models = collectModels();
 
-  // 创建文档
-  const document = SwaggerModule.createDocument(app, config, {
-    extraModels: models,
-  });
+    // 创建文档
+    const document = SwaggerModule.createDocument(app, config, {
+      extraModels: models,
+    });
 
-  // 设置Swagger UI路径
-  SwaggerModule.setup(options.docPath || 'api-docs', app, document);
+    // 设置Swagger UI路径
+    SwaggerModule.setup(options.docPath || 'api-docs', app, document);
 
-  // 将生成的规范保存到文件
-  if (options.saveToFile) {
-    const outputPath = options.outputFilePath || './openapi-spec.json';
-    fs.writeFileSync(outputPath, JSON.stringify(document, null, 2));
+    // 将生成的规范保存到文件
+    if (options.saveToFile) {
+      const outputPath = options.outputFilePath || './openapi-spec.json';
+      fs.writeFileSync(outputPath, JSON.stringify(document, null, 2));
+    }
+
+    return document;
+  } catch (error) {
+    console.error('设置Swagger文档时出错:', error);
+    // 失败时也返回一个最小可用的文档
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup(options.docPath || 'api-docs', app, document);
+    return document;
   }
-
-  return document;
 } 

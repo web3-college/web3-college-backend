@@ -60,7 +60,7 @@ export class AuthController {
       }
       const nonce = request.session.nonce;
       console.log('verify', nonce);
-      const { fields } =
+      const { fields, id } =
         await this.authService.verifySignature(
           verifySignatureDto.message,
           verifySignatureDto.signature,
@@ -68,7 +68,7 @@ export class AuthController {
         );
 
       request.session.siwe = fields.data;
-
+      request.session.userId = id;
       if (fields.data.expirationTime) {
         request.session.cookie.expires = new Date(fields.data.expirationTime);
       }
