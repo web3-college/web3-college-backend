@@ -1,10 +1,14 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
-import { BaseResponseDto } from '../models/swagger.model';
-import { VerifySignatureDto } from '@/auth/dto/verify-signature.dto';
-import { SessionResponseDto, AuthErrorResponseDto } from '@/auth/dto/auth-response.dto';
-import { QueryUserDto, CreateUserDto, UpdateUserDto, UserListResponseDto, UserResponseDto } from '@/users/dto/index';
+import { ResponseModel } from '../interceptors/response.interceptor';
+import * as authDto from '@/auth/dto/index';
+import * as userDto from '@/users/dto/index';
+import * as courseDto from '@/course/dto/index';
+import * as roleDto from '@/role/dto/index';
+import * as permissionDto from '@/permission/dto/index';
+import * as categoryDto from '@/category/dto/index';
+import * as uploadDto from '@/upload/dto/index';
 
 /**
  * Swagger文档配置接口
@@ -25,24 +29,30 @@ export interface SwaggerConfigOptions {
  */
 export function collectModels(): any[] {
   // 基础响应模型总是需要包含
-  const models: any[] = [BaseResponseDto];
+  const models: any[] = [ResponseModel];
 
-  // 手动导入DTO类，避免动态导入的路径问题
   try {
+    // 收集所有导入模块中的DTO
+    const dtoModules = {
+      authDto,
+      userDto,
+      courseDto,
+      roleDto,
+      permissionDto,
+      categoryDto,
+      uploadDto
+    };
 
-    // 添加到模型列表
-    models.push(VerifySignatureDto);
-    models.push(SessionResponseDto);
-    models.push(AuthErrorResponseDto);
-    models.push(CreateUserDto);
-    models.push(UpdateUserDto);
-    models.push(UserListResponseDto);
-    models.push(UserResponseDto);
-    models.push(QueryUserDto);
-
-    // 未来可以添加更多DTO
+    // 遍历每个模块并添加其导出的所有DTO类
+    for (const [moduleName, module] of Object.entries(dtoModules)) {
+      for (const key in module) {
+        if (module[key] && typeof module[key] === 'function') {
+          models.push(module[key]);
+        }
+      }
+    }
   } catch (err) {
-    console.error('手动导入DTO时出错:', err);
+    console.error('导入DTO时出错:', err);
   }
 
   return models;
