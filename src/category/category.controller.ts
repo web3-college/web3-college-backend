@@ -3,11 +3,13 @@ import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBody, ApiResponse } from 
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CategoryResponseDto } from './dto/category-response.dto';
+import { apiArrayResponse, apiResponse } from '@/common/models/swagger.model';
 
 @ApiTags('category')
 @Controller('category')
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(private readonly categoryService: CategoryService) { }
 
   // 创建分类
   @ApiOperation({ summary: '创建分类', description: '创建一个新的课程分类' })
@@ -22,7 +24,7 @@ export class CategoryController {
   // 获取所有分类
   @ApiOperation({ summary: '获取所有分类', description: '获取所有课程分类列表' })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: '是否只获取激活的分类' })
-  @ApiResponse({ status: 200, description: '获取分类列表成功' })
+  @ApiResponse(apiArrayResponse(CategoryResponseDto, '获取分类列表成功'))
   @Get()
   async findAllCategories(@Query('isActive') isActive?: boolean) {
     return this.categoryService.findAllCategories(isActive);

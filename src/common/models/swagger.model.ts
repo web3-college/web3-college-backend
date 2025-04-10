@@ -1,11 +1,5 @@
-import { ResponseModel } from '../interceptors/response.interceptor';
 import { Type } from '@nestjs/common';
 import { ApiResponseOptions, getSchemaPath } from '@nestjs/swagger';
-
-/**
- * Swagger文档用基础响应模型
- */
-export class BaseResponseDto<T> extends ResponseModel<T> { }
 
 /**
  * 创建一个API响应选项，用于@ApiResponse装饰器
@@ -36,6 +30,32 @@ export function apiResponse<T>(
         code: { type: 'number', example: status },
         msg: { type: 'string', example: 'success' },
         data: { type: 'object', oneOf: [{ $ref: getSchemaPath(dataType) }] }
+      }
+    }
+  };
+}
+
+/**
+ * 创建一个API响应选项，用于数组类型
+ * @param dataType 数据类型(DTO类)
+ * @param description 描述
+ * @param status HTTP状态码
+ * @returns ApiResponseOptions 可用于@ApiResponse和@ApiOkResponse等装饰器 
+ */
+export function apiArrayResponse<T>(
+  dataType: Type<T>,
+  description = '请求成功',
+  status = 200
+): ApiResponseOptions {
+  return {
+    status,
+    description,
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'number', example: status },
+        msg: { type: 'string', example: 'success' },
+        data: { type: 'array', items: { $ref: getSchemaPath(dataType) } }
       }
     }
   };
