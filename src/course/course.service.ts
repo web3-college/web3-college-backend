@@ -4,6 +4,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { PRISMA_DATABASE } from '@/database/database.constants';
 import { PrismaClient } from 'prisma/client/postgresql'
+import { SavePurchaseRecordDto } from './dto/save-purchase-record.dto';
 
 @Injectable()
 export class CourseService {
@@ -78,11 +79,6 @@ export class CourseService {
         skip,
         take,
         include: {
-          sections: {
-            orderBy: {
-              order: 'asc',
-            },
-          },
           category: true,
           _count: {
             select: {
@@ -111,11 +107,6 @@ export class CourseService {
     const course = await this.prisma.course.findUnique({
       where: { id },
       include: {
-        sections: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
         category: true,
         _count: {
           select: {
@@ -204,7 +195,9 @@ export class CourseService {
               ...section,
               title: section.title || '',
               description: section.description || '',
-              videoUrl: section.videoUrl || ''
+              videoUrl: section.videoUrl || '',
+              isPreview: section.isPreview || false,
+              duration: section.duration || 0,
             })),
           });
         }
@@ -269,16 +262,26 @@ export class CourseService {
   }
 
   // 获取课程的所有章节
-  async findAllCourseSections(courseId: number) {
+  async findAllCourseSections(courseId: number, isHasCourse: boolean) {
     // 确保课程存在
     await this.findCourseById(courseId);
 
-    return this.prisma.courseSection.findMany({
+    const sections = await this.prisma.courseSection.findMany({
       where: { courseId },
       orderBy: {
         order: 'asc',
       },
     });
+
+    // 如果用户未购买课程，过滤掉 videoUrl
+    if (!isHasCourse) {
+      return sections.map(section => ({
+        ...section,
+        videoUrl: null
+      }));
+    }
+
+    return sections;
   }
 
   // 根据创建者地址获取课程
@@ -317,5 +320,47 @@ export class CourseService {
       pageSize: take,
       totalPages: Math.ceil(total / take),
     };
+  }
+
+  // 保存课程购买记录
+  async savePurchaseRecord(savePurchaseRecordDto: SavePurchaseRecordDto) {
+    const { userId, courseId, txHash, onChainStatus } = savePurchaseRecordDto;
+
+    // 检查课程是否存在
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`课程ID ${courseId} 不存在`);
+    }
+
+    try {
+      // 检查用户是否已购买该课程
+      const existingPurchase = await this.prisma.purchasedCourse.findUnique({
+        where: {
+          userId_courseId: {
+            userId,
+            courseId,
+          },
+        },
+      });
+
+      if (existingPurchase) {
+        throw new Error('用户已购买该课程');
+      } else {
+        // 创建新的购买记录
+        return this.prisma.purchasedCourse.create({
+          data: {
+            userId,
+            courseId,
+            txHash,
+            onChainStatus,
+          },
+        });
+      }
+    } catch (error) {
+      throw new Error(`保存购买记录失败: ${error.message}`);
+    }
   }
 } 

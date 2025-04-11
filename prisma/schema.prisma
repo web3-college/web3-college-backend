@@ -97,6 +97,8 @@ model CourseSection {
   videoUrl    String // 视频URL
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  isPreview   Boolean          @default(false) // 是否为预览章节
+  duration    Int              @default(0) // 视频时长（秒）
   progress    CourseProgress[] // 学习进度
 }
 

@@ -5,7 +5,7 @@ import { CreateCategoryDto, UpdateCategoryDto, CategoryListResponseDto, QueryCat
 import { apiResponse } from '@/common/models/swagger.model';
 import { RolePermissionGuard } from '@/common/guards/role-permission.guard';
 import { Permission } from '@/common/decorators/role-permission.decorator';
-import { Create, Read, Update, Delete as Remove } from '@/common/decorators/role-permission.decorator'
+import { Create, Update, Delete as Remove } from '@/common/decorators/role-permission.decorator'
 @ApiTags('category')
 @UseGuards(RolePermissionGuard)
 @Permission('category')
@@ -35,6 +35,8 @@ export class CategoryController {
   // 获取所有分类（不分页）
   @ApiOperation({ summary: '获取所有分类（不分页）', description: '获取所有课程分类列表，不分页，可按激活状态和名称筛选，适用于下拉菜单等场景' })
   @ApiOkResponse(apiResponse(CategoryListResponseDto, '获取分类列表成功'))
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean, description: '是否只获取激活的分类' })
+  @ApiQuery({ name: 'name', required: false, type: String, description: '分类名称（模糊搜索）' })
   @Get('list-all')
   async findAllCategoriesWithoutPagination(
     @Query() query: QueryCategoryWithoutPaginationDto,

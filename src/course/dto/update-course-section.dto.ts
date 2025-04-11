@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateCourseSectionDto {
@@ -26,4 +26,15 @@ export class UpdateCourseSectionDto {
   @IsOptional()
   @IsString()
   videoUrl?: string;
+
+  @ApiPropertyOptional({ description: '是否为预览章节', example: false })
+  @IsOptional()
+  @IsBoolean()
+  isPreview?: boolean;
+
+  @ApiPropertyOptional({ description: '视频时长', example: 120 })
+  @IsOptional()
+  @IsNumber()
+  duration?: number;
+
 }
