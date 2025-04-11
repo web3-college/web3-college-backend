@@ -1,5 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Category, Course, CourseSection } from 'prisma/client/postgresql';
+import { Category, Course } from 'prisma/client/postgresql';
+
+export type CourseSection = {
+  description: string | null;
+  title: string;
+  order: number;
+  videoUrl: string;
+  isPreview: boolean;
+  duration: number;
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  courseId: number;
+}
 
 export class CourseResponseDto implements Course {
   @ApiProperty({
@@ -78,7 +91,7 @@ export class CourseResponseDto implements Course {
     description: '课程章节',
     example: 'Web3开发'
   })
-  sections: CourseSection[];
+  sections: any[];
   // 其他课程属性...
 }
 

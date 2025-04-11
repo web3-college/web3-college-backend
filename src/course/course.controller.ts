@@ -1,12 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe, Req } from '@nestjs/common';
 import { CourseService } from './course.service';
-import { CreateCourseDto, UpdateCourseDto, QueryCourseDto, CourseListResponseDto, CourseResponseDto } from './dto';
+import { CreateCourseDto, UpdateCourseDto, QueryCourseDto, CourseListResponseDto, CourseResponseDto, SavePurchaseRecordDto } from './dto';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBody, ApiOkResponse } from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { RolePermissionGuard } from '@/common/guards/role-permission.guard';
 import { Permission, Create, Read, Update, Delete as Remove } from '@/common/decorators/role-permission.decorator';
 import { apiResponse } from '@/common/models/swagger.model';
+import { Request } from 'express';
+import { hasCourse } from '@/utils/use-contract';
+
 @ApiTags('course')
 @UseGuards(RolePermissionGuard)
 @Permission('course')
@@ -84,9 +87,17 @@ export class CourseController {
   @ApiResponse({ status: 200, description: '章节列表' })
   @ApiResponse({ status: 404, description: '课程不存在' })
   async findAllCourseSections(
-    @Param('courseId', ParseIntPipe) courseId: number,
+    @Req() request: Request,
+    @Param('courseId', ParseIntPipe) courseId: number
   ) {
-    return this.courseService.findAllCourseSections(courseId);
+    let isHasCourse = false;
+    if (request.session.siwe) {
+      const { address } = request.session?.siwe;
+      if (address) {
+        isHasCourse = await hasCourse(address, courseId.toString());
+      }
+    }
+    return this.courseService.findAllCourseSections(courseId, isHasCourse);
   }
 
   // 获取创建者的课程
@@ -101,5 +112,17 @@ export class CourseController {
     const { page = 1, pageSize = 10 } = query;
     const skip = (page - 1) * pageSize;
     return this.courseService.findCoursesByCreator(creatorAddress, skip, pageSize);
+  }
+
+  // 保存购买记录
+  @Post('purchase')
+  @ApiOperation({ summary: '保存购买记录', description: '保存用户购买课程的记录' })
+  @ApiBody({ type: SavePurchaseRecordDto })
+  @ApiResponse({ status: 200, description: '购买记录保存成功' })
+  @ApiResponse({ status: 404, description: '课程不存在' })
+  async savePurchaseRecord(
+    @Body() savePurchaseRecordDto: SavePurchaseRecordDto,
+  ) {
+    return this.courseService.savePurchaseRecord(savePurchaseRecordDto);
   }
 }

@@ -191,4 +191,33 @@ export class AuthController {
       };
     }
   }
+
+  @ApiOperation({
+    summary: '检查用户是否有后台权限',
+    description: '检查当前登录用户是否拥有后台管理权限（角色包含super、admin或manager）'
+  })
+  @ApiOkResponse(apiInlineResponse({
+    hasAccess: { type: 'boolean', example: true }
+  }, '权限检查成功'))
+  @ApiUnauthorizedResponse(apiInlineResponse({
+    authenticated: { type: 'boolean', example: false },
+    message: { type: 'string', example: '未登录' }
+  }, '用户未登录', HttpStatus.UNAUTHORIZED))
+  @Get('isAdmin')
+  async isAdmin(@Req() request: Request) {
+    try {
+      // 检查用户是否已登录
+      if (!request.session?.siwe) {
+        throw new UnauthorizedException('未登录');
+      }
+
+      const siweData = request.session.siwe;
+      return this.authService.isAdmin(siweData.address);
+    } catch (error) {
+      return {
+        hasAccess: false,
+        message: error.message || '未登录',
+      };
+    }
+  }
 }
