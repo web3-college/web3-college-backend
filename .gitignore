@@ -60,3 +60,5 @@ prisma/client
 contracts/*
 
 openapi-spec.json
+
+.cursor/*

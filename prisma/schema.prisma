@@ -84,6 +84,7 @@ model Course {
   category         Category?         @relation(fields: [categoryId], references: [id])
   purchasedCourses PurchasedCourse[] // 购买记录
   sections         CourseSection[] // 课程章节
+  courseProgress   CourseProgress[]
 }
 
 // 课程章节
@@ -119,18 +120,20 @@ model PurchasedCourse {
 
 // 课程学习进度
 model CourseProgress {
-  id                Int             @id @default(autoincrement())
-  purchasedCourseId Int
-  purchasedCourse   PurchasedCourse @relation(fields: [purchasedCourseId], references: [id])
+  id                Int              @id @default(autoincrement())
+  userId            String // 用户ID
+  courseId          Int // 课程ID
+  course            Course           @relation(fields: [courseId], references: [id])
   sectionId         Int
-  section           CourseSection   @relation(fields: [sectionId], references: [id])
-  status            ProgressStatus  @default(STARTED)
-  progress          Float           @default(0) // 0-100进度百分比
+  section           CourseSection    @relation(fields: [sectionId], references: [id])
+  status            ProgressStatus   @default(STARTED)
+  progress          Float            @default(0) // 0-100进度百分比
   lastPosition      Int? // 上次观看的位置（秒）
-  updatedAt         DateTime        @updatedAt
-  syncedToChain     Boolean         @default(false) // 是否已同步到链上
+  updatedAt         DateTime         @updatedAt
+  PurchasedCourse   PurchasedCourse? @relation(fields: [purchasedCourseId], references: [id])
+  purchasedCourseId Int?
 
-  @@unique([purchasedCourseId, sectionId]) // 一个用户的某个课程的某个章节只有一条进度记录
+  @@unique([userId, sectionId]) // 一个用户的某个章节只有一条进度记录
 }
 
 // 进度状态枚举

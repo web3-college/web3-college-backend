@@ -1,8 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe, Req } from '@nestjs/common';
 import { CourseService } from './course.service';
-import { CreateCourseDto, UpdateCourseDto, QueryCourseDto, CourseListResponseDto, CourseResponseDto, SavePurchaseRecordDto } from './dto';
+import { CreateCourseDto, UpdateCourseDto, QueryCourseDto, CourseResponseDto, SavePurchaseRecordDto, UpdateProgressDto } from './dto';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiParam, ApiBody, ApiOkResponse } from '@nestjs/swagger';
+import { CourseListResponseDto } from './dto/course-response.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { RolePermissionGuard } from '@/common/guards/role-permission.guard';
 import { Permission, Create, Read, Update, Delete as Remove } from '@/common/decorators/role-permission.decorator';
@@ -35,6 +36,23 @@ export class CourseController {
     const { page = 1, pageSize = 10, ...filters } = query;
     const skip = (page - 1) * pageSize;
     return this.courseService.findAllCourses(skip, Number(pageSize), filters);
+  }
+
+  // 更新课程学习进度
+  @Put('progress')
+  @ApiOperation({ summary: '更新课程学习进度' })
+  @ApiBody({ type: UpdateProgressDto })
+  @ApiResponse({ status: 200, description: '更新学习进度成功' })
+  @ApiResponse({ status: 401, description: '用户未登录' })
+  @ApiResponse({ status: 404, description: '课程章节不存在' })
+  async updateProgress(@Body() updateProgressDto: UpdateProgressDto, @Req() request: Request) {
+    // 从会话中获取用户地址
+    if (!request.session.siwe) {
+      throw new Error('用户未登录');
+    }
+
+    const userId = request.session.userId;
+    return this.courseService.updateCourseProgress(userId.toString(), updateProgressDto);
   }
 
   // 获取单个课程
@@ -91,13 +109,15 @@ export class CourseController {
     @Param('courseId', ParseIntPipe) courseId: number
   ) {
     let isHasCourse = false;
+    let userId = null;
     if (request.session.siwe) {
       const { address } = request.session?.siwe;
       if (address) {
         isHasCourse = await hasCourse(address, courseId.toString());
+        userId = request.session.userId;
       }
     }
-    return this.courseService.findAllCourseSections(courseId, isHasCourse);
+    return this.courseService.findAllCourseSections(courseId, isHasCourse, userId);
   }
 
   // 获取创建者的课程

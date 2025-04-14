@@ -3,8 +3,9 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { PRISMA_DATABASE } from '@/database/database.constants';
-import { PrismaClient } from 'prisma/client/postgresql'
+import { PrismaClient, ProgressStatus } from 'prisma/client/postgresql'
 import { SavePurchaseRecordDto } from './dto/save-purchase-record.dto';
+import { UpdateProgressDto } from './dto/update-progress.dto';
 
 @Injectable()
 export class CourseService {
@@ -262,16 +263,44 @@ export class CourseService {
   }
 
   // 获取课程的所有章节
-  async findAllCourseSections(courseId: number, isHasCourse: boolean) {
+  async findAllCourseSections(courseId: number, isHasCourse: boolean, userId: number) {
     // 确保课程存在
     await this.findCourseById(courseId);
 
+    // 获取所有章节
     const sections = await this.prisma.courseSection.findMany({
       where: { courseId },
       orderBy: {
         order: 'asc',
       },
     });
+
+    // 如果用户已购买课程且提供了用户ID，获取学习进度
+    if (isHasCourse && userId) {
+      // 查询用户该课程所有章节的学习进度
+      const progressRecords = await this.prisma.courseProgress.findMany({
+        where: {
+          userId: userId.toString(),
+          courseId,
+        },
+      });
+
+      // 将进度信息与章节信息合并
+      const sectionsWithProgress = sections.map(section => {
+        const progressRecord = progressRecords.find(
+          record => record.sectionId === section.id
+        );
+
+        return {
+          ...section,
+          progress: progressRecord ? progressRecord.progress : 0,
+          lastPosition: progressRecord ? progressRecord.lastPosition : 0,
+          status: progressRecord ? progressRecord.status : 'NOT_STARTED',
+        };
+      });
+
+      return sectionsWithProgress;
+    }
 
     // 如果用户未购买课程，过滤掉 videoUrl
     if (!isHasCourse) {
@@ -362,5 +391,71 @@ export class CourseService {
     } catch (error) {
       throw new Error(`保存购买记录失败: ${error.message}`);
     }
+  }
+
+  // 更新课程学习进度
+  async updateCourseProgress(userId: string, data: UpdateProgressDto) {
+    const { courseId, sectionId, progress, lastPosition } = data;
+
+    // 确保课程和章节存在
+    const section = await this.prisma.courseSection.findUnique({
+      where: {
+        id: sectionId,
+        courseId: courseId
+      },
+    });
+
+    if (!section) {
+      throw new NotFoundException(`课程章节不存在`);
+    }
+
+    // 先查询现有进度记录
+    const existingProgress = await this.prisma.courseProgress.findUnique({
+      where: {
+        userId_sectionId: {
+          userId,
+          sectionId,
+        },
+      },
+    });
+
+    // 确保进度只能增加不能减少
+    let finalProgress = progress;
+    if (existingProgress && existingProgress.progress > progress) {
+      finalProgress = existingProgress.progress;
+    }
+
+    // 计算进度状态
+    let status;
+    if (finalProgress >= 95) {
+      status = ProgressStatus.COMPLETED;
+    } else if (finalProgress <= 0) {
+      status = ProgressStatus.NOT_STARTED;
+    } else {
+      status = ProgressStatus.STARTED;
+    }
+
+    // 使用 upsert 创建或更新进度记录
+    return this.prisma.courseProgress.upsert({
+      where: {
+        userId_sectionId: {
+          userId,
+          sectionId,
+        },
+      },
+      update: {
+        progress: finalProgress,
+        lastPosition,
+        status,
+      },
+      create: {
+        userId,
+        courseId,
+        sectionId,
+        progress: finalProgress,
+        lastPosition,
+        status,
+      },
+    });
   }
 } 
