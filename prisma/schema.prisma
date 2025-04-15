@@ -20,16 +20,17 @@ generator seed {
 
 // 用户表
 model User {
-  id               Int               @id @default(autoincrement())
-  address          String            @unique // 用户的钱包地址
-  name             String? // 用户名称
-  email            String?           @unique // 用户邮箱
-  avatar           String? // 用户头像
-  bio              String? // 用户简介
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  purchasedCourses PurchasedCourse[] // 用户购买的课程
-  roles            UserRole[] // 用户角色关系
+  id                  Int                  @id @default(autoincrement())
+  address             String               @unique // 用户的钱包地址
+  name                String? // 用户名称
+  email               String?              @unique // 用户邮箱
+  avatar              String? // 用户头像
+  bio                 String? // 用户简介
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  purchasedCourses    PurchasedCourse[] // 用户购买的课程
+  roles               UserRole[] // 用户角色关系
+  certificateRequests CertificateRequest[] // 证书请求
 }
 
 model Role {
@@ -70,21 +71,22 @@ model RolePermissions {
 
 // 课程表
 model Course {
-  id               Int               @id @default(autoincrement()) // 对应合约中的web2CourseId
-  name             String // 课程名称
-  description      String? // 课程描述
-  coverImage       String? // 课程封面图
-  price            Float // 课程价格（YD代币）
-  creator          String // 课程创建者地址
-  isActive         Boolean           @default(true) // 课程是否可购买
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  onChainId        Int? // 链上课程ID
-  categoryId       Int? // 课程分类ID
-  category         Category?         @relation(fields: [categoryId], references: [id])
-  purchasedCourses PurchasedCourse[] // 购买记录
-  sections         CourseSection[] // 课程章节
-  courseProgress   CourseProgress[]
+  id                  Int                  @id @default(autoincrement()) // 对应合约中的web2CourseId
+  name                String // 课程名称
+  description         String? // 课程描述
+  coverImage          String? // 课程封面图
+  price               Float // 课程价格（YD代币）
+  creator             String // 课程创建者地址
+  isActive            Boolean              @default(true) // 课程是否可购买
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  onChainId           Int? // 链上课程ID
+  categoryId          Int? // 课程分类ID
+  category            Category?            @relation(fields: [categoryId], references: [id])
+  purchasedCourses    PurchasedCourse[] // 购买记录
+  sections            CourseSection[] // 课程章节
+  courseProgress      CourseProgress[] // 学习进度
+  certificateRequests CertificateRequest[] // 证书请求
 }
 
 // 课程章节
@@ -154,4 +156,28 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   courses     Course[] // 关联的课程
+}
+
+// 证书请求
+model CertificateRequest {
+  id        Int               @id @default(autoincrement())
+  userId    Int
+  user      User              @relation(fields: [userId], references: [id])
+  address   String // 用户地址
+  courseId  Int
+  course    Course            @relation(fields: [courseId], references: [id])
+  notes     String? // 申请备注
+  feedback  String? // 反馈信息
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  status    CertificateStatus @default(PENDING)
+  txHash    String? // 证书交易哈希
+}
+
+// 证书状态枚举
+enum CertificateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ISSUED
 }

@@ -71,7 +71,8 @@ async function bootstrap() {
       { name: 'course', description: '课程相关API' },
       { name: 'category', description: '分类相关API' },
       { name: 'upload', description: '上传相关API' },
-      { name: 'permission', description: '权限相关API' }
+      { name: 'permission', description: '权限相关API' },
+      { name: 'certificate', description: '证书相关API' },
     ],
     docPath: 'api-docs',
     saveToFile: true,

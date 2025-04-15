@@ -1,11 +1,12 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { CreateCourseSectionDto } from './dto/create-course-section.dto';
 import { PRISMA_DATABASE } from '@/database/database.constants';
-import { PrismaClient, ProgressStatus } from 'prisma/client/postgresql'
+import { PrismaClient, ProgressStatus, CertificateStatus } from 'prisma/client/postgresql'
 import { SavePurchaseRecordDto } from './dto/save-purchase-record.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
+import { hasCourse } from '@/utils/use-contract';
 
 @Injectable()
 export class CourseService {

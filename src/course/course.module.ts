@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CourseController } from './course.controller';
-import { DatabaseModule } from '@/database/database.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [],
   controllers: [CourseController],
   providers: [CourseService],
   exports: [CourseService],
 })
-export class CourseModule {} 
+export class CourseModule { } 
