@@ -36,7 +36,11 @@ export class AuthController {
     const nonce = this.authService.getNonce();
     console.log('getNonce', nonce);
     request.session.nonce = nonce;
-    return { nonce };
+    return new Promise((resolve) => {
+      request.session.save(() => {
+        resolve({ nonce });
+      });
+    });
   }
 
   @ApiOperation({

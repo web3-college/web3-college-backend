@@ -181,3 +181,13 @@ enum CertificateStatus {
   REJECTED
   ISSUED
 }
+
+// 会话表 - 用于存储会话数据 (与connect-pg-simple默认表结构兼容)
+model Session {
+  sid    String   @id // 会话ID
+  sess   Json // 会话数据 (JSON格式)
+  expire DateTime // 过期时间
+
+  @@index([expire], name: "IDX_session_expire")
+  @@map("session") // 映射到小写表名
+}

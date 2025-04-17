@@ -14,13 +14,13 @@ import { consoleTransports } from './createRotateTransport';
         return {
           transports: [
             consoleTransports,
-            ...(logOn ? [
-                createDailyRotateTransport('info', 'application'),
-                createDailyRotateTransport('error', 'error'),
+            ...(logOn.toLowerCase() === 'true' ? [
+              createDailyRotateTransport('info', 'application'),
+              createDailyRotateTransport('error', 'error'),
             ] : [])],
         };
       },
     }),
   ],
 })
-export class LogsModule {}
+export class LogsModule { }

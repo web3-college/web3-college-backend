@@ -1,0 +1,71 @@
+service: web3-college-backend
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64 # 使用 ARM 架构提高性能并降低成本
+  region: ${opt:region, 'ap-southeast-1'}
+  logRetentionInDays: 14
+  timeout: 60 # 增加超时时间以防止请求超时
+  memorySize: 1024
+  
+  environment:
+    NODE_ENV: ${env:NODE_ENV, 'production'}
+    # 日志和API配置
+    LOG_ON: ${env:LOG_ON, 'true'}
+    ERROR_FILTER: ${env:ERROR_FILTER, 'true'}
+    CORS: ${env:CORS, 'true'}
+    PREFIX: ${env:PREFIX, '/api'}
+    # 数据库配置
+    DATABASE_URL: ${env:DATABASE_URL}
+    DIRECT_URL: ${env:DIRECT_URL}
+    TENANT_DB_TYPE: ${env:TENANT_DB_TYPE, 'prisma'}
+    # AWS S3 配置
+    AWS_S3_REGION: ${env:AWS_S3_REGION, 'ap-southeast-1'}
+    AWS_S3_ACCESS_KEY_ID: ${env:AWS_S3_ACCESS_KEY_ID}
+    AWS_S3_SECRET_ACCESS_KEY: ${env:AWS_S3_SECRET_ACCESS_KEY}
+    AWS_S3_BUCKET_NAME: ${env:AWS_S3_BUCKET_NAME, 'web3-college-storage'}
+    # 智能合约地址
+    YIDENG_TOKEN_ADDRESS: ${env:YIDENG_TOKEN_ADDRESS}
+    COURSE_MARKET_ADDRESS: ${env:COURSE_MARKET_ADDRESS}
+    COURSE_CERTIFICATE_ADDRESS: ${env:COURSE_CERTIFICATE_ADDRESS}
+    # 以太坊提供商
+    ETHEREUM_PROVIDER_URL: ${env:ETHEREUM_PROVIDER_URL}
+    # 权限配置
+    ADMIN_ROLE: ${env:ADMIN_ROLE}
+
+functions:
+  api:
+    # handler: dist/lambda.handler
+    image: 396608766651.dkr.ecr.ap-southeast-1.amazonaws.com/web3-college-backend:prod
+    events:
+      - httpApi:
+          path: /api/{proxy+}
+          method: '*'
+    timeout: 30
+    memorySize: 1024
+
+plugins:
+  - serverless-offline
+  - serverless-plugin-optimize
+
+custom:
+
+  optimize:
+    external:
+      - '@prisma/client/runtime'
+      - '@aws-sdk/client-s3'
+    minify: true
+    includePaths:
+      - 'prisma/**'
+    disableCompression: false
+    
+  # Serverless Offline 配置
+  serverless-offline:
+    httpPort: 3001
+    lambdaPort: 3002
+    noPrependStageInUrl: true
+    useChildProcesses: true
+    apiPrefix: api # API Gateway stage 名称，与应用前缀一致
