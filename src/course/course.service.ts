@@ -303,11 +303,11 @@ export class CourseService {
       return sectionsWithProgress;
     }
 
-    // 如果用户未购买课程，过滤掉 videoUrl
+    // 如果用户未购买课程，过滤掉非预览章节的 videoUrl
     if (!isHasCourse) {
       return sections.map(section => ({
         ...section,
-        videoUrl: null
+        videoUrl: section.isPreview ? section.videoUrl : null
       }));
     }
 
