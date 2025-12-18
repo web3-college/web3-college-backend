@@ -18,19 +18,28 @@ import {
   ApiUnauthorizedResponse,
   ApiResponse,
 } from '@nestjs/swagger';
-import { apiSimpleResponse, apiInlineResponse } from '../common/models/swagger.model';
+import {
+  apiSimpleResponse,
+  apiInlineResponse,
+} from '../common/models/swagger.model';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private authService: AuthService,
-  ) { }
+  constructor(private authService: AuthService) {}
 
-  @ApiOperation({ summary: '获取随机Nonce', description: '用于SIWE签名过程，返回一个随机字符串' })
-  @ApiOkResponse(apiInlineResponse({
-    nonce: { type: 'string', example: 'a1b2c3d4e5f6' }
-  }, '成功获取Nonce'))
+  @ApiOperation({
+    summary: '获取随机Nonce',
+    description: '用于SIWE签名过程，返回一个随机字符串',
+  })
+  @ApiOkResponse(
+    apiInlineResponse(
+      {
+        nonce: { type: 'string', example: 'a1b2c3d4e5f6' },
+      },
+      '成功获取Nonce',
+    ),
+  )
   @Get('nonce')
   async getNonce(@Req() request: Request) {
     const nonce = this.authService.getNonce();
@@ -45,14 +54,20 @@ export class AuthController {
 
   @ApiOperation({
     summary: '验证SIWE签名',
-    description: '验证以太坊钱包签名'
+    description: '验证以太坊钱包签名',
   })
   @ApiBody({ type: VerifySignatureDto })
   @ApiOkResponse(apiSimpleResponse(true, '认证成功'))
-  @ApiResponse(apiInlineResponse({
-    status: { type: 'number', example: 422 },
-    message: { type: 'string', example: 'Invalid signature' }
-  }, '签名验证失败', 422))
+  @ApiResponse(
+    apiInlineResponse(
+      {
+        status: { type: 'number', example: 422 },
+        message: { type: 'string', example: 'Invalid signature' },
+      },
+      '签名验证失败',
+      422,
+    ),
+  )
   @Post('verify')
   async verifySignature(
     @Body() verifySignatureDto: VerifySignatureDto,
@@ -64,12 +79,11 @@ export class AuthController {
       }
       const nonce = request.session.nonce;
       console.log('verify', nonce);
-      const { fields, id } =
-        await this.authService.verifySignature(
-          verifySignatureDto.message,
-          verifySignatureDto.signature,
-          nonce,
-        );
+      const { fields, id } = await this.authService.verifySignature(
+        verifySignatureDto.message,
+        verifySignatureDto.signature,
+        nonce,
+      );
 
       request.session.siwe = fields.data;
       request.session.userId = id;
@@ -111,16 +125,30 @@ export class AuthController {
 
   @ApiOperation({
     summary: '获取当前登录用户信息',
-    description: '从会话中获取用户信息'
+    description: '从会话中获取用户信息',
   })
-  @ApiOkResponse(apiInlineResponse({
-    address: { type: 'string', example: '0x1234567890abcdef1234567890abcdef12345678' },
-    chainId: { type: 'number', example: 1 }
-  }, '用户已登录'))
-  @ApiUnauthorizedResponse(apiInlineResponse({
-    authenticated: { type: 'boolean', example: false },
-    message: { type: 'string', example: '未登录' }
-  }, '用户未登录', HttpStatus.UNAUTHORIZED))
+  @ApiOkResponse(
+    apiInlineResponse(
+      {
+        address: {
+          type: 'string',
+          example: '0x1234567890abcdef1234567890abcdef12345678',
+        },
+        chainId: { type: 'number', example: 1 },
+      },
+      '用户已登录',
+    ),
+  )
+  @ApiUnauthorizedResponse(
+    apiInlineResponse(
+      {
+        authenticated: { type: 'boolean', example: false },
+        message: { type: 'string', example: '未登录' },
+      },
+      '用户未登录',
+      HttpStatus.UNAUTHORIZED,
+    ),
+  )
   @Get('session')
   async getUserInfo(@Req() request: Request) {
     try {
@@ -157,12 +185,17 @@ export class AuthController {
 
   @ApiOperation({
     summary: '用户登出',
-    description: '清除用户会话和认证信息'
+    description: '清除用户会话和认证信息',
   })
-  @ApiOkResponse(apiInlineResponse({
-    success: { type: 'boolean', example: true },
-    message: { type: 'string', example: '已成功登出' }
-  }, '登出成功'))
+  @ApiOkResponse(
+    apiInlineResponse(
+      {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: '已成功登出' },
+      },
+      '登出成功',
+    ),
+  )
   @Get('logout')
   async logout(@Req() request: Request) {
     try {
@@ -198,15 +231,27 @@ export class AuthController {
 
   @ApiOperation({
     summary: '检查用户是否有后台权限',
-    description: '检查当前登录用户是否拥有后台管理权限（角色包含super、admin或manager）'
+    description:
+      '检查当前登录用户是否拥有后台管理权限（角色包含super、admin或manager）',
   })
-  @ApiOkResponse(apiInlineResponse({
-    hasAccess: { type: 'boolean', example: true }
-  }, '权限检查成功'))
-  @ApiUnauthorizedResponse(apiInlineResponse({
-    authenticated: { type: 'boolean', example: false },
-    message: { type: 'string', example: '未登录' }
-  }, '用户未登录', HttpStatus.UNAUTHORIZED))
+  @ApiOkResponse(
+    apiInlineResponse(
+      {
+        hasAccess: { type: 'boolean', example: true },
+      },
+      '权限检查成功',
+    ),
+  )
+  @ApiUnauthorizedResponse(
+    apiInlineResponse(
+      {
+        authenticated: { type: 'boolean', example: false },
+        message: { type: 'string', example: '未登录' },
+      },
+      '用户未登录',
+      HttpStatus.UNAUTHORIZED,
+    ),
+  )
   @Get('isAdmin')
   async isAdmin(@Req() request: Request) {
     try {

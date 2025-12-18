@@ -8,9 +8,7 @@ import pgConnect from 'connect-pg-simple';
   imports: [ConfigModule, PrismaModule],
 })
 export class SessionModule implements NestModule {
-  constructor(
-    private readonly configService: ConfigService,
-  ) { }
+  constructor(private readonly configService: ConfigService) {}
 
   configure(consumer: MiddlewareConsumer) {
     const PgStore = pgConnect(session);
@@ -18,7 +16,7 @@ export class SessionModule implements NestModule {
       conString: this.configService.get('DATABASE_URL'),
       tableName: 'session',
       // 每隔一小时清理一次过期会话
-      pruneSessionInterval: 60 * 60
+      pruneSessionInterval: 60 * 60,
     };
 
     consumer

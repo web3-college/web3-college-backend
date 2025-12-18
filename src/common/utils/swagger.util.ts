@@ -17,7 +17,7 @@ export interface SwaggerConfigOptions {
   title: string;
   description?: string;
   version?: string;
-  tags?: Array<{ name: string, description: string }>;
+  tags?: Array<{ name: string; description: string }>;
   docPath?: string;
   saveToFile?: boolean;
   outputFilePath?: string;
@@ -40,7 +40,7 @@ export function collectModels(): any[] {
       roleDto,
       permissionDto,
       categoryDto,
-      uploadDto
+      uploadDto,
     };
 
     // 遍历每个模块并添加其导出的所有DTO类
@@ -76,7 +76,7 @@ export function setupSwagger(
 
   // 添加标签
   if (options.tags && options.tags.length > 0) {
-    options.tags.forEach(tag => {
+    options.tags.forEach((tag) => {
       builder.addTag(tag.name, tag.description);
     });
   }
@@ -90,6 +90,9 @@ export function setupSwagger(
     // 创建文档
     const document = SwaggerModule.createDocument(app, config, {
       extraModels: models,
+      operationIdFactory: (controllerKey: string, methodKey: string) => {
+        return `${controllerKey}_${methodKey}`;
+      },
     });
 
     // 设置Swagger UI路径
@@ -109,4 +112,4 @@ export function setupSwagger(
     SwaggerModule.setup(options.docPath || 'api-docs', app, document);
     return document;
   }
-} 
+}
